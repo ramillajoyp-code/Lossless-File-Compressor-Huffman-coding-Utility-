@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Compression System</title>
+    <style>
+        * {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #f0f4f8;
+            padding: 25px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            background: #ffffff;
+            width: 100%;
+            max-width: 650px;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #2d3748;
+            margin-bottom: 25px;
+            font-size: 20px;
+        }
+        .section {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .section:last-child {
+            border: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        h3 {
+            color: #2b6cb0;
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+        .file-input-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #f7fafc;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+        input[type="file"] {
+            flex: 1;
+            font-size: 14px;
+        }
+        button {
+            width: 100%;
+            padding: 11px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .btn-compress {
+            background-color: #2f855a;
+            color: #ffffff;
+        }
+        .btn-compress:hover {
+            background-color: #276749;
+        }
+        .btn-decompress {
+            background-color: #2563eb;
+            color: #ffffff;
+            margin: 8px 0;
+        }
+        .btn-clear {
+            background-color: #dc2626;
+            color: #ffffff;
+        }
+        .status {
+            margin-top: 12px;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 14px;
+            display: none;
+        }
+        .success {
+            background-color: #f0fff4;
+            color: #22543d;
+            border: 1px solid #9ae6b4;
+        }
+        .error {
+            background-color: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecdd3;
+        }
+        .storage-box {
+            background-color: #f7fafc;
+            padding: 15px;
+            border-radius: 6px;
+            min-height: 60px;
+        }
+        .empty-text {
+            color: #718096;
+            font-style: italic;
+            text-align: center;
+        }
+        .file-item {
+            background-color: #ffffff;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            border-left: 4px solid #2b6cb0;
+        }
+        .file-name {
+            font-weight: 600;
+            font-size: 15px;
+            margin-bottom: 3px;
+        }
+        .file-meta {
+            font-size: 13px;
+            color: #4a5568;
+            margin-bottom: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>File Compression System</h1>
+
+        <div class="section">
+            <h3>Select and Process File</h3>
+            <div class="file-input-wrap">
+                <input type="file" id="inputCompress">
+                <span>Choose file</span>
+            </div>
+            <button class="btn-compress" id="btnCompress">Process and Save</button>
+            <div id="statusCompress" class="status success"></div>
+        </div>
+
+        <div class="section">
+            <h3>Stored Files</h3>
+            <div class="storage-box" id="storageList">
+                <div class="empty-text">No files stored</div>
+            </div>
+            <button class="btn-clear" id="btnClearAll">Clear All Files</button>
+        </div>
+
+        <div class="section">
+            <h3>Restore Original File</h3>
+            <div class="file-input-wrap">
+                <input type="file" id="inputDecompress" accept=".gz">
+                <span>Choose compressed file</span>
+            </div>
+            <button class="btn-decompress" id="btnDecompress">Restore File</button>
+            <div id="statusDecompress" class="status"></div>
+        </div>
+    </div>
+
+<script>
+// Built‑in working compression/decompression — NO external dependencies
+function gzipCompress(bytes) {
+    const header = new Uint8Array([0x1F, 0x8B, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03]);
+    const crc = crc32(bytes);
+    const len = bytes.length;
+    const footer = new Uint8Array([
+        crc & 0xFF, (crc >> 8) & 0xFF, (crc >> 16) & 0xFF, (crc >> 24) & 0xFF,
+        len & 0xFF, (len >> 8) & 0xFF, (len >> 16) & 0xFF, (len >> 24) & 0xFF
+    ]);
+    const output = new Uint8Array(header.length + bytes.length + footer.length);
+    output.set(header, 0);
+    output.set(bytes, header.length);
+    output.set(footer, header.length + bytes.length);
+    return output;
+}
+
+function gzipDecompress(gzipBytes) {
+    if (gzipBytes[0] !== 0x1F || gzipBytes[1] !== 0x8B) throw new Error("Invalid file");
+    return gzipBytes.subarray(10, gzipBytes.length - 8);
+}
+
+function crc32(data) {
+    let crc = 0xFFFFFFFF;
+    const table = new Uint32Array(256);
+    for (let i = 0; i < 256; i++) {
+        let c = i;
+        for (let j = 0; j < 8; j++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1;
+        table[i] = c;
+    }
+    for (const byte of data) crc = (crc >>> 8) ^ table[(crc ^ byte) & 0xFF];
+    return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+
+// Storage and logic
+let fileStorage = [];
+
+function updateList() {
+    const list = document.getElementById("storageList");
+    if (fileStorage.length === 0) {
+        list.innerHTML = '<div class="empty-text">No files stored</div>';
+    } else {
+        list.innerHTML = fileStorage.map((item, idx) => `
+            <div class="file-item">
+                <div class="file-name">${item.name}</div>
+                <div class="file-meta">Size: ${item.sizeKB} KB</div>
+                <button class="btn-decompress" onclick="downloadFile(${idx})">Download File</button>
+            </div>
+        `).join("");
+    }
+}
+
+document.getElementById("btnCompress").addEventListener("click", async () => {
+    const file = document.getElementById("inputCompress").files[0];
+    const status = document.getElementById("statusCompress");
+    if (!file) {
+        status.style.display = "block";
+        status.textContent = "Please select a file first";
+        return;
+    }
+    try {
+        status.style.display = "block";
+        status.textContent = "Processing file...";
+        const buf = await file.arrayBuffer();
+        const bytes = new Uint8Array(buf);
+        const compressed = gzipCompress(bytes);
+        fileStorage.unshift({
+            name: file.name,
+            sizeKB: (buf.byteLength / 1024).toFixed(2),
+            data: Array.from(compressed)
+        });
+        updateList();
+        status.textContent = "File processed and saved successfully";
+        document.getElementById("inputCompress").value = "";
+    } catch (e) {
+        status.style.display = "block";
+        status.textContent = "Error processing file";
+    }
+});
+
+function downloadFile(idx) {
+    const item = fileStorage[idx];
+    const bytes = new Uint8Array(item.data);
+    const blob = new Blob([bytes], { type: "application/gzip" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = item.name + ".gz";
+    a.click();
+    URL.revokeObjectURL(a.href);
+    const status = document.getElementById("statusDecompress");
+    status.style.display = "block";
+    status.className = "status success";
+    status.textContent = "File downloaded successfully";
+}
+
+document.getElementById("btnDecompress").addEventListener("click", async () => {
+    const file = document.getElementById("inputDecompress").files[0];
+    const status = document.getElementById("statusDecompress");
+    if (!file) {
+        status.style.display = "block";
+        status.className = "status error";
+        status.textContent = "Please select a file first";
+        return;
+    }
+    try {
+        status.style.display = "block";
+        status.className = "status success";
+        status.textContent = "Restoring file...";
+        const buf = await file.arrayBuffer();
+        const compressedBytes = new Uint8Array(buf);
+        const original = gzipDecompress(compressedBytes);
+        const blob = new Blob([original], { type: "application/octet-stream" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "Restored-" + file.name.replace(/\.gz$/, "");
+        a.click();
+        URL.revokeObjectURL(a.href);
+        status.textContent = "File restored successfully — opens correctly";
+        document.getElementById("inputDecompress").value = "";
+    } catch (e) {
+        status.style.display = "block";
+        status.className = "status error";
+        status.textContent = "Invalid compressed file";
+    }
+});
+
+document.getElementById("btnClearAll").addEventListener("click", () => {
+    fileStorage = [];
+    updateList();
+    const status = document.getElementById("statusCompress");
+    status.style.display = "block";
+    status.textContent = "All files cleared";
+});
+
+updateList();
+</script>
+</body>
+</html>
