@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lossless File Compressor</title>
+    <meta name="description" content="Modern file compression management dashboard with analytics, local storage, previews, and secure upload tools." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <link rel="stylesheet" href="css/style.css">
+    
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="hero-card glass panel">
+        <div>
+          <p class="eyebrow"><i class="fa-solid fa-sparkles"></i></p>
+          <h1>Lossless File Compressor</h1>
+          <p class="subtext">A polished compression workspace for managing, previewing, and analyzing files with a modern SaaS-style dashboard.</p>
+          <div class="chip-row">
+            <span class="chip"><i class="fa-solid fa-shield-halved"></i> Secure validation</span>
+            <span class="chip"><i class="fa-solid fa-bolt"></i> LocalStorage backend</span>
+            <span class="chip"><i class="fa-solid fa-chart-line"></i> Live analytics</span>
+          </div>
+        </div>
+        <div class="hero-actions">
+          <button id="themeToggle" class="ghost-btn" type="button" aria-label="Toggle dark mode"><i class="fa-solid fa-moon"></i> Dark Mode</button>
+          <button id="refreshBtn" class="primary-btn" type="button"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+        </div>
+      </header>
+
+      <section class="stats-grid" id="statsGrid"></section>
+
+      <section class="dashboard-grid">
+        <article class="panel glass upload-panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Upload & Compress</p>
+              <h2>Drop files here</h2>
+            </div>
+            <span class="badge">Drag & Drop</span>
+          </div>
+          <label id="dropZone" class="drop-zone" for="fileInput">
+            <input id="fileInput" type="file" hidden multiple />
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <strong>Choose files or drag them here</strong>
+            <span>Supports images, PDFs, text, and documents up to 500 MB.</span>
+          </label>
+          <div class="progress-block">
+            <div class="progress-label"><span>Upload progress</span><strong id="uploadLabel">0%</strong></div>
+            <div class="progress-track"><div id="uploadProgress" class="progress-fill"></div></div>
+          </div>
+          <div class="progress-block">
+            <div class="progress-label"><span>Compression progress</span><strong id="compressionLabel">0%</strong></div>
+            <div class="progress-track"><div id="compressionProgress" class="progress-fill"></div></div>
+          </div>
+          <button id="compressBtn" class="primary-btn full-width" type="button"><i class="fa-solid fa-compress-alt"></i> Process Files</button>
+        </article>
+
+        <article class="panel glass info-panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Operations</p>
+              <h2>Quick insights</h2>
+            </div>
+            <span class="badge accent">Live</span>
+          </div>
+          <div class="feature-list">
+            <div class="feature-card"><i class="fa-solid fa-table-list"></i><span>Table view with rename, preview, download, and delete tools.</span></div>
+            <div class="feature-card"><i class="fa-solid fa-file-waveform"></i><span>Compression analytics, storage trends, and file-type distribution.</span></div>
+            <div class="feature-card"><i class="fa-solid fa-sliders"></i><span>Search, sort, and preview controls for rapid file inspection.</span></div>
+          </div>
+        </article>
+      </section>
+
+      <section class="dashboard-grid lower-grid">
+        <article class="panel glass files-panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Stored Files</p>
+              <h2>Management Center</h2>
+            </div>
+            <button id="clearAllBtn" class="ghost-btn" type="button"><i class="fa-solid fa-trash-can"></i> Clear All</button>
+          </div>
+          <div class="toolbar-row">
+            <label class="input-shell"><i class="fa-solid fa-magnifying-glass"></i><input id="searchInput" type="search" placeholder="Search by name or type" /></label>
+            <label class="select-shell"><i class="fa-solid fa-sort"></i><select id="sortSelect"><option value="date-desc">Sort by date (newest)</option><option value="date-asc">Sort by date (oldest)</option><option value="size-desc">Sort by size (largest)</option><option value="size-asc">Sort by size (smallest)</option><option value="name-asc">Sort by name (A-Z)</option><option value="type-asc">Sort by file type</option></select></label>
+          </div>
+          <div class="table-wrap"><table><thead><tr><th>Name</th><th>Original</th><th>Compressed</th><th>Saved</th><th>Date</th><th>Actions</th></tr></thead><tbody id="filesTableBody"></tbody></table></div>
+        </article>
+
+        <article class="panel glass analytics-panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Analytics</p>
+              <h2>Compression Trends</h2>
+            </div>
+          </div>
+          <div class="chart-grid">
+            <div class="chart-card"><canvas id="savingsChart"></canvas></div>
+            <div class="chart-card"><canvas id="typeChart"></canvas></div>
+            <div class="chart-card wide"><canvas id="monthlyChart"></canvas></div>
+          </div>
+        </article>
+      </section>
+    </div>
+
+    <div id="previewModal" class="modal hidden" aria-hidden="true"><div class="modal-card glass"><div class="modal-head"><div><p class="eyebrow">Preview</p><h3 id="previewTitle">File Preview</h3></div><button id="closePreviewBtn" class="ghost-btn" type="button" aria-label="Close preview"><i class="fa-solid fa-xmark"></i></button></div><div id="previewBody" class="preview-body"></div></div></div>
+    <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
+    <script src="js/fileManager.js"></script>
+    <script src="js/compression.js"></script>
+    <script src="js/analytics.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  </body>
+</html>
